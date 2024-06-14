@@ -6,7 +6,7 @@
 //
 
 import Foundation
-
+import UserNotifications
 class BinanceWebSocketService : NSObject, ObservableObject {
     var webSocket : URLSessionWebSocketTask?
    @Published var binanceMarketPriceData : [BinanceMarketPriceModel] = []
@@ -60,12 +60,27 @@ class BinanceWebSocketService : NSObject, ObservableObject {
             DispatchQueue.global(qos: .background).asyncAfter(deadline: .now() + 0.5) {
                 self.binanceMarketPriceData.append(contentsOf: update.data)
                 print(self.binanceMarketPriceData)
+                self.sendNotification(for: update.data)
             }
             
         } catch {
             print("Failed to decode JSON: \(error)")
         }
     }
+    
+    private func sendNotification(for updates: [BinanceMarketPriceModel]) {
+           let content = UNMutableNotificationContent()
+           content.title = "New Market Price Update"
+           content.body = "Received \(updates.count) new updates."
+            content.sound = .defaultRingtone
+
+           let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+           UNUserNotificationCenter.current().add(request) { error in
+               if let error = error {
+                   print("Failed to add notification request: \(error)")
+               }
+           }
+       }
     
     
 }
